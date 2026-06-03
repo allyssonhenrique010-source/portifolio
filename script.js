@@ -107,14 +107,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const formStatus = document.getElementById('formStatus');
 
     if (contactForm && formStatus) {
-        contactForm.addEventListener('submit', (event) => {
+        contactForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
             const nome = document.getElementById('nome').value.trim();
             const email = document.getElementById('email').value.trim();
             const mensagem = document.getElementById('mensagem').value.trim();
             const submitButton = contactForm.querySelector('button[type="submit"]');
 
             if (!nome || !email || !mensagem) {
-                event.preventDefault();
                 formStatus.textContent = 'Por favor, preencha todos os campos antes de enviar.';
                 formStatus.classList.remove('success');
                 formStatus.classList.add('error');
@@ -125,7 +126,35 @@ document.addEventListener('DOMContentLoaded', () => {
             formStatus.classList.remove('error', 'success');
             submitButton.disabled = true;
             submitButton.textContent = 'Enviando...';
-            // O envio seguirá normalmente para o FormSubmit
+
+            try {
+                const formData = new FormData(contactForm);
+                const response = await fetch(contactForm.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Erro ao enviar a mensagem.');
+                }
+
+                formStatus.innerHTML = '<strong>Obrigado pela mensagem!</strong> Em breve retornarei.';
+                formStatus.classList.remove('error');
+                formStatus.classList.add('success');
+                contactForm.reset();
+            } catch (error) {
+                formStatus.textContent = 'Não foi possível enviar a mensagem. Tente novamente mais tarde.';
+                formStatus.classList.remove('success');
+                formStatus.classList.add('error');
+                console.error(error);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Enviar mensagem';
+            }
         });
     }
 });
